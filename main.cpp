@@ -1,15 +1,16 @@
 #include <QCoreApplication>
 #include "pch.h"
 #include "BigInt.h"
+
 void runTests();
+
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
-
+    runTests();
 
     std::cout << "BIG INTEGER CALCULATOR\n\n";
     std::cout << "Perform addition or subtraction on integers of any size.\n";
-    runTests();
     while (1) {
         std::string oper;
         BigInt num1;
@@ -27,24 +28,38 @@ int main(int argc, char *argv[])
         std::cout << std::endl;
         std::cout << "Enter 2nd number: ";
         std::cin >> num2;
-        BigInt summ;
+        BigInt result;
 
         if(oper == "-"){
-            summ = num1 - num2;
+            result = num1 - num2;
         }
         else if (oper == "+"){
-            summ = num1 + num2;
+            result = num1 + num2;
         }
         else if (oper == "*"){
-            summ = num1 * num2;
+            result = num1 * num2;
         }
-        std::cout << "\nAnswer = " << summ << std::endl;
+        std::cout << "\nAnswer = " << result << std::endl;
     }
     return a.exec();
 }
 
 //TODO: formal testing
 void runTests(){
-    std::cout << "BEGIN TESTING\n";
+
+    BigInt num1;// = INT_MAX;
+    BigInt num2;// = INT_MIN;
+    BigInt result;
+
+    num1 = "99999999999999999999999999999999999999999999999";
+    num2 = "99999999999999999999999999999999999999999999999";
+
+    result = num1 + num2;
+    std::cout << "\n" << result << " ";
+    result = num2 + 36 + num2 + 73;
+    result = 36 + num2;
+    std::cout << result;
+    //if(result == num1 + num2d);
+
 
 }
