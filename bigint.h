@@ -5,10 +5,11 @@ class BigInt
 {
 public:
         BigInt();
+
         BigInt(std::string);
-       ~BigInt();
-        static bool errorFound;
-        bool checkDigits(std::string s);
+        BigInt(const BigInt &);
+        ~BigInt(){}
+        BigInt operator=(std::string const &);
 
         friend std::istream& operator>>(std::istream &, BigInt &);
         friend std::ostream& operator<<(std::ostream &, BigInt &);
@@ -29,5 +30,6 @@ private:
         std::vector<char> input;
         bool isNegative;
         int inputSize;
+        bool invalidInt;
 };
 

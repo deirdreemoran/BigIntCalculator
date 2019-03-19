@@ -3,53 +3,65 @@
 #include <deque>
 #include <string>
 
-BigInt::BigInt() :isNegative(false), inputSize(0)
+BigInt::BigInt() : isNegative(false), inputSize(0), invalidInt(false)
 {
 }
 
-BigInt::BigInt(std::string s)
+BigInt::BigInt(std::string s) : isNegative(false), inputSize(0), invalidInt(false)
 {
-     std::copy(s.begin(), s.end(), std::back_inserter(input));
+    std::copy(s.begin(), s.end(), std::back_inserter(input));
 }
 
-BigInt::~BigInt()
+BigInt::BigInt(const BigInt & myint)
 {
+    this->input = myint.input;
+    this->inputSize = myint.inputSize;
+    this->invalidInt = myint.invalidInt;
+    this->isNegative = myint.isNegative;
 }
 
-std::istream & operator >>(std::istream & stream, BigInt & myint) {
+BigInt BigInt::operator=(std::string const & s)
+{
+    std::copy(s.begin(), s.end(), std::back_inserter(input));
+    BigInt f(s);
+    return f;
+}
+
+std::istream & operator >>(std::istream & stream, BigInt & myint)
+{
         std::string s;
         stream >> s;
-        //check for valid digits
-        std::size_t found = s.find_first_not_of("0123456789");
+        std::size_t found = s.find_first_not_of("-0123456789");
         if(found != std::string::npos){
-            myint.errorFound = true;
+           myint.invalidInt = true;
             return stream;
         }
-
-          //copy string into vector without leading negative sign
+        //copy string into vector without leading negative sign
         if(s[0] == '-'){
             myint.isNegative = true;
             std::copy(s.begin() + 1, s.end(), std::back_inserter(myint.input));
-            myint.inputSize = static_cast<int>(s.length() - 1);
+            myint.inputSize =(s.length() - 1);
         }
         else{
-            myint.isNegative = false;
             std::copy(s.begin(), s.end(), std::back_inserter(myint.input));
-            myint.inputSize = static_cast<int>(s.length());
-
+            myint.inputSize =(s.length());
         }
         return stream;
 }
-
-std::ostream & operator <<(std::ostream & stream, BigInt & myint) {
+std::ostream & operator <<(std::ostream & stream, BigInt & myint)
+{
     std::string s;
     std::vector<char>::iterator it;
 
     it = myint.input.begin();
-
     while(it != myint.input.end()){
         s += *it;
         it++;
+    }
+
+    if(myint.invalidInt == true){
+        std::string err(myint.input.begin(), myint.input.end());
+        s += "INVALID: " + err;
     }
     stream << s;
     return stream;
@@ -57,61 +69,57 @@ std::ostream & operator <<(std::ostream & stream, BigInt & myint) {
 
 BigInt operator+(BigInt & lhs, BigInt & rhs)
 {
-    std::deque<int> dq;
+    BigInt result;
+    std::deque<char> dq;
     std::string res;
+
+    if(lhs.invalidInt){
+        return lhs;
+    }
+    if(rhs.invalidInt){
+        return rhs;
+    }
+
     //if both are negative, negate result
     if(lhs.isNegative == true && rhs.isNegative == true){
-            res += '-';
+        res += '-';
     }
+
     //if only lhs is negative
     else if(lhs.isNegative == true){
         //if equal -/+ numbers, sum will be zero
         if(lhs == rhs){
-            res = "0";
-            BigInt b = res;
-            return b;
+            result = "0";
+            return result;
         }
         else if(lhs > rhs){
             lhs.isNegative = false;
-            BigInt b;
-            b.input.push_back('-');
-            BigInt bb = lhs - rhs;
-            b.input.insert(
-                 b.input.end(),
-                 std::make_move_iterator(bb.input.begin()),
-                 std::make_move_iterator(bb.input.end())
-               );
-            return b;
+            result = lhs - rhs;
+            result.input.insert(result.input.begin(),'-');
+            return result;
         }
         else if(lhs < rhs){
             lhs.isNegative = false;
-            BigInt bb = rhs - lhs;
-            return bb;
+            result = rhs - lhs;
+            return result;
         }
     }
     //if rhs is negative
     else if(rhs.isNegative == true){
         if(lhs == rhs){
-            res = "0";
-            BigInt b = res;
-            return b;
+            result = "0";
+            return result;
         }
          if(lhs > rhs){
             rhs.isNegative = false;
-            BigInt bb = lhs - rhs;
-            return bb;
+            result = lhs - rhs;
+            return result;
         }
          else if(lhs > rhs){
             rhs.isNegative = false;
-            BigInt b;
-            b.input.push_back('-');
-            BigInt bb = rhs - lhs;
-            b.input.insert(
-                 b.input.end(),
-                 std::make_move_iterator(bb.input.begin()),
-                 std::make_move_iterator(bb.input.end())
-               );
-            return b;
+            result = rhs - lhs;
+            result.input.insert(result.input.begin(),'-');
+            return result;
         }
     }
 
@@ -119,7 +127,6 @@ BigInt operator+(BigInt & lhs, BigInt & rhs)
     int temp;
     std::vector<char>::iterator itLhs = lhs.input.end() - 1;
     std::vector<char>::iterator itRhs = rhs.input.end() - 1;
-
     while (itLhs >= lhs.input.begin() && itRhs >= rhs.input.begin()) {
             temp = (*itLhs - '0') + (*itRhs - '0');
             if (carry == true) {
@@ -132,8 +139,9 @@ BigInt operator+(BigInt & lhs, BigInt & rhs)
             else { carry = false; }
             itLhs--;
             itRhs--;
-            dq.push_front(temp);
+            dq.push_front(static_cast<char>('0' + temp));
     }
+
     while (itLhs >= lhs.input.begin()) {
             //fill any remaining digits
             int temp = *itLhs - '0';
@@ -146,7 +154,7 @@ BigInt operator+(BigInt & lhs, BigInt & rhs)
                     temp -= 10;
             }
             else { carry = false; }
-            dq.push_front(temp);
+            dq.push_front(static_cast<char>('0' + temp));
             itLhs--;
 
     }
@@ -163,39 +171,44 @@ BigInt operator+(BigInt & lhs, BigInt & rhs)
             }
             else { carry = false; }
             itRhs--;
-            dq.push_front(temp);
+            dq.push_front(static_cast<char>('0' + temp));
     }
     if (carry == true) {
-            dq.push_front(1);
+            dq.push_front('1');
     }
 
     while (!dq.empty()) {
-            res += std::to_string(dq.front());
+            res += dq.front();
             dq.pop_front();
     }
-    BigInt b(res);
-
-    return b;
+    result = res;
+    return result;
 }
 
 BigInt operator-(BigInt & lhs, BigInt & rhs)
 {
-    std::deque<int> dq;
+    BigInt result;
+    std::deque<char> dq;
     std::string res;
 
+    if(lhs.invalidInt){
+        return lhs;
+    }
+    if(rhs.invalidInt){
+        return rhs;
+    }
+    // Case 1:  Two negative integers
     if(lhs.isNegative == true && rhs.isNegative == true){
         if(lhs == rhs){
-            res = "0";
-            BigInt b = res;
-            return b;
+            result = "0";
+            return result;
         }
         else if(lhs > rhs){
-            std::cout << "\nlhs is greater than rhs\n";
-            //make both pos, then addisNegative to result, then subtract
             rhs.isNegative = false;
             lhs.isNegative = false;
             res += '-';
         }
+        //case C:
         else if(lhs < rhs){
             rhs.isNegative = false;
             lhs.isNegative = false;
@@ -205,23 +218,22 @@ BigInt operator-(BigInt & lhs, BigInt & rhs)
             rhs.input = temp;
         }
     }
-    //if lhs isNegative
     else if(lhs.isNegative){
-        //change sign for second toisNegative, then add and return value with -
         rhs.isNegative = true;
-        return lhs + rhs;
+        result = lhs + rhs;
+        return result;
     }
-    //if rhs isisNegativeative, just add, this is pos num
+    //if rhs is negative, result is positive, regular add
     else if(rhs.isNegative){
         rhs.isNegative = false;
-        return lhs + rhs;
+        result = lhs + rhs;
+        return result;
     }
     //two positive numbers
     else{
         if(lhs == rhs){
-            res = "0";
-            BigInt b = res;
-            return b;
+            result = "0";
+            return result;
         }
         if(lhs < rhs){
             res += '-';
@@ -232,11 +244,12 @@ BigInt operator-(BigInt & lhs, BigInt & rhs)
         }
     }
 
-    bool borrow = false;
-    int temp = 0;
     std::vector<char>::iterator itLhs = lhs.input.end() - 1;
     std::vector<char>::iterator itRhs = rhs.input.end() - 1;
+    bool borrow = false;
+    int temp = 0;
 
+    //Reverse iterate through integer strings
     while (itLhs >= lhs.input.begin() && itRhs >= rhs.input.begin()) {
             if (borrow == true) {
                 temp = (*itLhs - '0') - 1 - (*itRhs - '0');
@@ -253,7 +266,7 @@ BigInt operator-(BigInt & lhs, BigInt & rhs)
             }
             itLhs--;
             itRhs--;
-            dq.push_front(temp);
+            dq.push_front(static_cast<char>('0' + temp));
     }
     //fill any remaining digits
     while (itLhs >= lhs.input.begin()) {
@@ -265,60 +278,95 @@ BigInt operator-(BigInt & lhs, BigInt & rhs)
             }
 
             if (temp > 0) {
-                dq.push_front(temp);
+                dq.push_front(static_cast<char>('0' + temp));
             }
             itLhs--;
     }
 
     while (!dq.empty()) {
-            res += std::to_string(dq.front());
+            res += dq.front();
             dq.pop_front();
     }
-    BigInt b(res);
-    return b;
-}
-
-bool BigInt::checkDigits(std::string s) {
-    for (int i = 0; i < s.length(); i++) {
-        if (!isdigit(s[i])) {
-            return false;
-        }
-    }
-    return true;
+    result = res;
+    return result;
 }
 
 BigInt operator*(BigInt & lhs, BigInt & rhs)
 {
-
-    std::string res;
-    if(lhs.isNegative && !rhs.isNegative){
-        res = "-";
+    //check for invalid input
+    if(lhs.invalidInt == true){
+        return lhs;
     }
-    else if(!lhs.isNegative && rhs.isNegative){
-        res = "-";
+    if(rhs.invalidInt == true){
+        return rhs;
     }
-
-    std::vector<char>::iterator itLhs = lhs.input.end();
-    std::vector<char>::iterator itRhs = rhs.input.end();
-//  4563456
-//  x    34
+    //stores intermediate result of multiplication
     std::deque<char> row;
+    int rNum = 0;
+
     int temp = 0;
     int carry = 0;
-    while(itRhs != rhs.input.begin()){
-        itLhs = lhs.input.end();
-        while(itLhs != lhs.input.begin()){
-            temp = (*itRhs - '0') * (*itLhs - '0') + carry;
-            if(temp > 9){
+    //stores all rows to be added together after multiplication
+    std::vector<BigInt> rows;
+
+    //Reverse iterate through integer vectors
+    int idxL = lhs.inputSize - 1;
+    int idxR = rhs.inputSize - 1;
+    while(idxR >= 0){
+        idxL = lhs.inputSize - 1;
+        carry = 0;
+        while(idxL >= 0){
+          temp = (rhs.input[idxR] - '0') * (lhs.input[idxL] - '0') + carry;
+          if(temp > 9){
                 carry = temp / 10;
                 temp = temp % 10;
-            }
-            itLhs--;
-            row.push_front(temp);
+          }
+          else{carry = 0;}
+            idxL--;
+            char c = '0' + temp;
+            row.push_front(c);
+        }
+        if(carry > 0){
+            char c = '0' + carry;
+            row.push_front(c);
         }
 
-        itRhs--;
+        BigInt r;
+        while(!row.empty()){
+            r.input.push_back(row.front());
+            row.pop_front();
+        }
+        int q = 0;
+        while(q < rNum){
+            r.input.push_back('0');
+            q++;
+        }
+        rows.push_back(r);
+        rNum++;
+        idxR--;
     }
+
+    int i = 0;
+    BigInt result;
+    result.input.push_back('0');
+
+    while(i < rNum){
+        BigInt current;
+        current.input = rows[i].input;
+        result.isNegative = false;
+        current.isNegative = false;
+        BigInt res2;
+        res2 = result + current;
+        result = res2;
+        i++;
+    }
+    if(lhs.isNegative && !rhs.isNegative){
+        result.input.insert(result.input.begin(),'-');
+    }
+    else if(!lhs.isNegative && rhs.isNegative){
+        result.input.insert(result.input.begin(),'-');
+    }
+    return result;
 }
 
 bool operator==(BigInt & lhs, BigInt & rhs)
